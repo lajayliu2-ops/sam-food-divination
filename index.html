@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sam的今日食神签</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Noto Serif SC', serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        .gold-text {
+            background: linear-gradient(135deg, #f5af19 0%, #f12711 50%, #f5af19 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .card-glow {
+            box-shadow: 0 0 30px rgba(245, 175, 25, 0.3);
+        }
+        .star-animation {
+            animation: twinkle 2s ease-in-out infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .zodiac-btn {
+            transition: all 0.3s ease;
+        }
+        .zodiac-btn:hover, .zodiac-btn.active {
+            background: linear-gradient(135deg, #f5af19, #f12711);
+            transform: scale(1.05);
+        }
+        .fortune-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(245, 175, 25, 0.3);
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <!-- 背景星星 -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden" id="starBackground">
+        <!-- 星星由JS动态生成 -->
+    </div>
+
+    <div class="relative z-10 max-w-md mx-auto px-4 py-8">
+        <!-- 标题 -->
+        <header class="text-center mb-8 fade-in">
+            <h1 class="text-3xl font-bold gold-text mb-2">Sam的今日食神签</h1>
+            <p class="text-gray-400 text-sm">输入生辰，AI为你占卜今日食运</p>
+        </header>
+
+        <!-- 输入表单 -->
+        <div id="inputSection" class="fade-in">
+            <!-- 星座选择 -->
+            <div class="mb-6">
+                <label class="block text-yellow-400 text-sm mb-3 text-center">选择你的星座</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="aries">♈<br>白羊</button>
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="taurus">♉<br>金牛</button>
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="gemini">♊<br>双子</button>
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="cancer">♋<br>巨蟹</button>
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="leo">♌<br>狮子</button>
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="virgo">♍<br>处女</button>
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="libra">♎<br>天秤</button>
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="scorpio">♏<br>天蝎</button>
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="sagittarius">♐<br>射手</button>
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="capricorn">♑<br>摩羯</button>
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="aquarius">♒<br>水瓶</button>
+                    <button class="zodiac-btn bg-white/10 rounded-lg py-3 text-sm" data-zodiac="pisces">♓<br>双鱼</button>
+                </div>
+            </div>
+
+            <!-- 出生日期时间 -->
+            <div class="mb-6">
+                <label class="block text-yellow-400 text-sm mb-3 text-center">出生日期与时间</label>
+                <input type="datetime-local" id="birthDateTime" 
+                    class="w-full bg-white/10 border border-yellow-500/30 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-yellow-500">
+            </div>
+
+            <!-- 求签按钮 -->
+            <button id="divineBtn" class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold py-4 rounded-lg text-lg shadow-lg transform transition hover:scale-105">
+                ✨ 今日食神签 ✨
+            </button>
+        </div>
+
+        <!-- 运势结果（默认隐藏） -->
+        <div id="resultSection" class="hidden fade-in">
+            <!-- 运势卡片 -->
+            <div class="fortune-card rounded-2xl p-6 mb-6 card-glow">
+                <div class="text-center mb-4">
+                    <span id="zodiacIcon" class="text-4xl"></span>
+                    <h2 id="fortuneTitle" class="text-xl font-bold gold-text mt-2"></h2>
+                </div>
+                <div id="fortuneContent" class="text-center text-gray-300 leading-relaxed mb-4"></div>
+                
+                <!-- 运势详情 -->
+                <div class="grid grid-cols-3 gap-2 text-center text-xs mb-4">
+                    <div class="bg-white/5 rounded-lg p-2">
+                        <span class="text-gray-400">幸运色</span>
+                        <div id="luckyColor" class="text-yellow-400 font-bold"></div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-2">
+                        <span class="text-gray-400">幸运数</span>
+                        <div id="luckyNumber" class="text-yellow-400 font-bold"></div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-2">
+                        <span class="text-gray-400">吉位</span>
+                        <div id="luckyDirection" class="text-yellow-400 font-bold"></div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-center gap-4 text-sm">
+                    <span class="px-3 py-1 bg-red-500/20 rounded-full text-red-300">宜：<span id="yi"></span></span>
+                    <span class="px-3 py-1 bg-gray-500/20 rounded-full text-gray-300">忌：<span id="ji"></span></span>
+                </div>
+            </div>
+
+            <!-- 菜品推荐 -->
+            <div class="bg-white/5 rounded-2xl p-6 mb-6">
+                <h3 class="text-lg font-bold text-yellow-400 mb-4 text-center">🍽️ 食神推荐</h3>
+                <div id="dishSection" class="text-center">
+                    <div class="w-full h-48 bg-gradient-to-br from-orange-400/20 to-red-500/20 rounded-lg mb-4 flex items-center justify-center border border-orange-500/30">
+                        <span id="dishEmoji" class="text-8xl animate-pulse">🍜</span>
+                    </div>
+                    <h4 id="dishName" class="text-xl font-bold mb-2"></h4>
+                    <p id="dishDesc" class="text-gray-400 text-sm mb-4"></p>
+                    
+                    <!-- 食神故事 -->
+                    <div class="bg-black/20 rounded-lg p-4 mb-4 text-left">
+                        <h5 class="text-yellow-400 text-sm font-bold mb-2">📖 食神故事</h5>
+                        <p id="dishStory" class="text-gray-300 text-sm leading-relaxed"></p>
+                    </div>
+                    
+                    <!-- 深圳觅食 -->
+                    <div class="text-left">
+                        <h5 class="text-yellow-400 text-sm font-bold mb-2">📍 深圳觅食</h5>
+                        <div id="restaurants" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 重新求签 -->
+            <button id="resetBtn" class="w-full border border-yellow-500/50 text-yellow-400 py-3 rounded-lg">
+                再求一签
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 星座数据
+        const zodiacData = {
+            aries: { name: '白羊座', icon: '♈', element: '火' },
+            taurus: { name: '金牛座', icon: '♉', element: '土' },
+            gemini: { name: '双子座', icon: '♊', element: '风' },
+            cancer: { name: '巨蟹座', icon: '♋', element: '水' },
+            leo: { name: '狮子座', icon: '♌', element: '火' },
+            virgo: { name: '处女座', icon: '♍', element: '土' },
+            libra: { name: '天秤座', icon: '♎', element: '风' },
+            scorpio: { name: '天蝎座', icon: '♏', element: '水' },
+            sagittarius: { name: '射手座', icon: '♐', element: '火' },
+            capricorn: { name: '摩羯座', icon: '♑', element: '土' },
+            aquarius: { name: '水瓶座', icon: '♒', element: '风' },
+            pisces: { name: '双鱼座', icon: '♓', element: '水' }
+        };
+
+        // 运势签文库
+        const fortuneTexts = [
+            { title: '大吉', content: '今日食神眷顾，味蕾大开，宜尝鲜探店', yi: '尝试新菜', ji: '快餐凑合' },
+            { title: '中吉', content: '食运平稳，经典口味最合今日气场', yi: '家常味道', ji: '生冷食物' },
+            { title: '小吉', content: '今日宜清淡，少食多餐为佳', yi: '清淡饮食', ji: '油腻辛辣' },
+            { title: '吉', content: '食神指路，东南方向有惊喜', yi: '外出就餐', ji: '宅家泡面' }
+        ];
+
+        // 菜品库
+        const dishes = [
+            { name: '泰式青柠鲈鱼', desc: '酸辣开胃，清爽解腻', element: '水' },
+            { name: '广式烧鹅', desc: '皮脆肉嫩，经典粤味', element: '火' },
+            { name: '台式卤肉饭', desc: '香浓入味， comfort food 首选', element: '土' },
+            { name: '日式拉面', desc: '汤头浓郁，暖胃暖心', element: '水' },
+            { name: '川味火锅', desc: '麻辣鲜香，聚会首选', element: '火' },
+            { name: '越南河粉', desc: '清淡鲜美，健康之选', element: '风' }
+        ];
+
+        let selectedZodiac = null;
+
+        // 星座选择
+        document.querySelectorAll('.zodiac-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.zodiac-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedZodiac = btn.dataset.zodiac;
+            });
+        });
+
+        // 求签
+        document.getElementById('divineBtn').addEventListener('click', async () => {
+            const birthDateTime = document.getElementById('birthDateTime').value;
+            
+            if (!selectedZodiac) {
+                alert('请先选择星座');
+                return;
+            }
+            if (!birthDateTime) {
+                alert('请输入出生日期时间');
+                return;
+            }
+
+            // 显示加载状态
+            const btn = document.getElementById('divineBtn');
+            const originalText = btn.textContent;
+            btn.textContent = '🔮 食神占卜中...';
+            btn.disabled = true;
+
+            try {
+                // 调用后端 API
+                const response = await fetch('/api/fortune', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        zodiac: selectedZodiac,
+                        birthDateTime: birthDateTime
+                    })
+                });
+
+                const data = await response.json();
+
+                // 显示结果
+                document.getElementById('inputSection').classList.add('hidden');
+                document.getElementById('resultSection').classList.remove('hidden');
+
+                document.getElementById('zodiacIcon').textContent = data.zodiac.icon;
+                document.getElementById('fortuneTitle').textContent = `${data.zodiac.name} · ${data.fortune.title}`;
+                document.getElementById('fortuneContent').textContent = data.fortune.content;
+                document.getElementById('luckyColor').textContent = data.fortune.luckyColor;
+                document.getElementById('luckyNumber').textContent = data.fortune.luckyNumber;
+                document.getElementById('luckyDirection').textContent = data.fortune.direction;
+                document.getElementById('yi').textContent = data.fortune.yi;
+                document.getElementById('ji').textContent = data.fortune.ji;
+                document.getElementById('dishEmoji').textContent = data.dish.emoji || '🍜';
+                document.getElementById('dishName').textContent = data.dish.name;
+                document.getElementById('dishDesc').textContent = data.dish.desc;
+                document.getElementById('dishStory').textContent = data.dish.story;
+                document.getElementById('dishStory').textContent = data.dish.story;
+
+                // 显示餐厅推荐
+                const restaurantsHtml = data.dish.restaurants.map(r => `
+                    <div class="bg-white/5 rounded-lg p-3">
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="font-bold text-white">${r.name}</div>
+                            <div class="text-yellow-400 text-sm">${r.price}</div>
+                        </div>
+                        <div class="text-gray-400 text-xs mb-1">📍 ${r.address}</div>
+                        <div class="text-gray-500 text-xs">📞 ${r.phone}</div>
+                    </div>
+                `).join('');
+                document.getElementById('restaurants').innerHTML = restaurantsHtml;
+
+            } catch (error) {
+                alert('占卜失败，请重试');
+                console.error(error);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // 重新求签
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            document.getElementById('resultSection').classList.add('hidden');
+            document.getElementById('inputSection').classList.remove('hidden');
+            selectedZodiac = null;
+            document.querySelectorAll('.zodiac-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('birthDateTime').value = '';
+        });
+
+        // 动态生成星星背景
+        function createStars() {
+            const starContainer = document.getElementById('starBackground');
+            const starSymbols = ['✦', '✧', '★', '☆', '⋆', '·'];
+            const starColors = ['text-yellow-300', 'text-yellow-200', 'text-yellow-400'];
+            
+            // 生成50颗星星
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.className = `star-animation absolute ${starColors[Math.floor(Math.random() * starColors.length)]}`;
+                star.textContent = starSymbols[Math.floor(Math.random() * starSymbols.length)];
+                
+                // 随机位置
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                
+                // 随机大小
+                const size = Math.random() * 1.5 + 0.5;
+                star.style.fontSize = size + 'rem';
+                
+                // 随机动画延迟
+                star.style.animationDelay = Math.random() * 3 + 's';
+                
+                // 随机动画时长
+                star.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                
+                starContainer.appendChild(star);
+            }
+        }
+
+        // 页面加载时生成星星
+        createStars();
+    </script>
+</body>
+</html>
